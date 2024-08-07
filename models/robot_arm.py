@@ -1,6 +1,11 @@
 import numpy as np
 from roboticstoolbox.robot.ERobot import ERobot
 import os
+
+import roboticstoolbox as rtb
+
+# robot = rtb.models.UR3()
+# print(robot)
 class BaxterLeftArm():
     def __init__(self, urdf_file): 
         
@@ -107,7 +112,7 @@ class URArm():
         assert joint_angle.shape[0] == 6
 
 
-        link_idx_list = [0,2,3,4,5,6,7]
+        link_idx_list = [1,2,3,4,5,6,7,9]
         # link 0,1,2,3,4,5,6,7, and hand
         R_list = []
         t_list = []
@@ -120,7 +125,7 @@ class URArm():
             t_list.append(T.t)
 
 
-
+        #print(R_list, t_list)
         return np.array(R_list),np.array(t_list)
         
 
