@@ -71,7 +71,7 @@ class ImageDataLoaderSynthetic(Dataset):
         self.data_folder = data_folder
 
         self.ndds_dataset, self.ndds_data_configs = find_ndds_data_in_dir(self.data_folder)
-
+        print(self.ndds_dataset)
         self.scale = scale
 
 
@@ -113,8 +113,20 @@ class ImageDataLoaderSynthetic(Dataset):
             base_to_cam = torch.tensor(base_to_cam, dtype=torch.float)
 
         else:
-            joint_angle = None
-            base_to_cam = None
+            joint_angle = np.array([data['sim_state']['joints'][0]['position'],
+                                    data['sim_state']['joints'][1]['position'],
+                                    data['sim_state']['joints'][2]['position'],
+                                    data['sim_state']['joints'][3]['position'],
+                                    data['sim_state']['joints'][4]['position'],
+                                    data['sim_state']['joints'][5]['position'],
+                                    data['sim_state']['joints'][6]['position']])
+
+
+            TCR_ndds = np.array(data['objects'][0]['pose_transform'])
+            base_to_cam = transform_DREAM_to_CPLSim_TCR(TCR_ndds)
+
+            joint_angle = torch.tensor(joint_angle, dtype=torch.float)
+            base_to_cam = torch.tensor(base_to_cam, dtype=torch.float)
 
 
         return image, joint_angle, base_to_cam
@@ -170,10 +182,13 @@ class ImageDataLoaderSyntheticCopp(Dataset):
         
         if self.csvdata[img_number-1][0] == img_number:
             joint_angle = torch.tensor(self.csvdata[img_number-1][1], dtype=torch.double)
-            matrix = quaternion_and_translation_to_transform_matrix(self.csvdata[img_number-1][2][3:7], self.csvdata[img_number-1][2][:3])
+            q = self.csvdata[img_number-1][2][3:7]
+            
+            matrix = quaternion_and_translation_to_transform_matrix(np.array([q[3], q[0], q[1], q[2]]), self.csvdata[img_number-1][2][:3])
             base_to_cam = torch.tensor(matrix, dtype=torch.double)
             base_to_cam[:3,3] = base_to_cam[:3,3] 
-            basetointertia = base_to_inertia()
+            #basetointertia = base_to_inertia()
+            basetointertia = np.eye(4)
             intertia = torch.tensor(basetointertia, dtype=torch.double)
             # in coppeliasim we got T inertia to camera we need base_link to camera
         return image, joint_angle, torch.tensor(np.dot(base_to_cam, intertia), dtype=torch.double)
@@ -186,7 +201,8 @@ class ImageDataLoaderReal(Dataset):
         self.data_folder = data_folder
 
         self.ndds_dataset, self.ndds_data_configs = find_ndds_data_in_dir(self.data_folder)
-
+        print(self.ndds_dataset)
+        print(self.ndds_data_configs)
         self.scale = scale
 
 
@@ -225,7 +241,17 @@ class ImageDataLoaderReal(Dataset):
 
 
         else:
-            joint_angle = None
+            joint_angle = np.array([data['sim_state']['joints'][0]['position'],
+                                    data['sim_state']['joints'][1]['position'],
+                                    data['sim_state']['joints'][2]['position'],
+                                    data['sim_state']['joints'][3]['position'],
+                                    data['sim_state']['joints'][4]['position'],
+                                    data['sim_state']['joints'][5]['position'],
+                                    data['sim_state']['joints'][6]['position']])
+
+
+            joint_angle = torch.tensor(joint_angle, dtype=torch.float)
+
 
 
         return image, joint_angle
@@ -316,9 +342,32 @@ def main():
     plt.axis('off')
     plt.show()
 
+def main2():
+    trans_to_tensor = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    data_folder = '/home/deep/CtRNet-robot-pose-estimation/panda_synth_test_dr/panda_synth_test_dr'
+    test_data_folder = '/home/deep/CtRNet-robot-pose-estimation/panda_synth_test_dr/panda_synth_test_dr'
+    datasets = ImageDataLoaderSynthetic(data_folder = data_folder, scale = 0.5, trans_to_tensor = trans_to_tensor)
+    print(datasets)
+    # datasets = {}
+    # dataloaders = {}
+    # data_n_batches = {}
+    # for phase in ['train','valid']:
+    #     datasets[phase] = ImageDataLoaderSynthetic(data_folder = data_folder if phase=='train' else test_data_folder, scale = 0.5, trans_to_tensor = trans_to_tensor)
+    #     print(datasets[phase])
+
+    #     dataloaders[phase] = DataLoader(
+    #         datasets[phase], batch_size=16,
+    #         shuffle=True if phase == 'train' else False,
+    #         num_workers=16)
+
+    #     data_n_batches[phase] = len(dataloaders[phase])
 
 if __name__ == "__main__":
-    main()
+    main2()
 # datasets = {}
 # dataloaders = {}
 # data_n_batches = {}
