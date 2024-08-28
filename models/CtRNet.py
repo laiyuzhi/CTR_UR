@@ -55,6 +55,9 @@ class CtRNet(torch.nn.Module):
         elif args.robot_name == "Baxter_left_arm":
             from .robot_arm import BaxterLeftArm
             self.robot = BaxterLeftArm(args.urdf_file)
+        elif args.robot_name == "UR":
+            from .robot_arm import URArm
+            self.robot = URArm(args.urdf_file)
         print("Robot model: {}".format(args.robot_name))
 
 
@@ -70,6 +73,8 @@ class CtRNet(torch.nn.Module):
         points_3d = torch.from_numpy(np.array(t_list)).float().to(self.device)
         if self.args.robot_name == "Panda":
             points_3d = points_3d[[0,2,3,4,6,7,8]] # remove 1 and 5 links as they are overlapping with 2 and 6
+        if self.args.robot_name == "UR":
+            points_3d = points_3d[[0,1,2,3,4,5,7]] # remove 1 and 5 links as they are overlapping with 2 and 6
 
         #init_pose = torch.tensor([[  1.5497,  0.5420, -0.3909, -0.4698, -0.0211,  1.3243]])
         #cTr = bpnp(points_2d_pred, points_3d, K, init_pose)
@@ -92,6 +97,8 @@ class CtRNet(torch.nn.Module):
             points_3d = torch.from_numpy(np.array(t_list)).float().to(self.device)
             if self.args.robot_name == "Panda":
                 points_3d = points_3d[:,[0,2,3,4,6,7,8]]
+            if self.args.robot_name == "UR":
+                points_3d = points_3d[[0,1,2,3,4,5,7]]
             points_3d_batch.append(points_3d[None])
 
         points_3d_batch = torch.cat(points_3d_batch, dim=0)
@@ -167,7 +174,8 @@ class CtRNet(torch.nn.Module):
                 points_3d = torch.from_numpy(np.array(t_list)).float().to(self.device)
                 if self.args.robot_name == "Panda":
                     points_3d = points_3d[:,[0,2,3,4,6,7,8]]
-
+                if self.args.robot_name == "UR":
+                    points_3d = points_3d[[0,1,2,3,4,5,7]]
                 # get camera pose
                 cTr = self.bpnp(points_2d[b][None], points_3d, self.K)
 
